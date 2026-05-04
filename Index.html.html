@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendario de Eranthys</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f2;
+    --bg3: #eeede8;
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #888780;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --blue: #2a6db5;
+    --blue-bg: rgba(42,109,181,0.10);
+    --purple-bg: rgba(80,30,140,0.13);
+    --purple-border: rgba(80,30,140,0.38);
+    --red-bg: rgba(160,30,30,0.12);
+    --red-border: rgba(160,30,30,0.4);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+      --text: #f0efe8; --text2: #a8a79f; --text3: #6e6d67;
+      --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.20);
+      --blue: #5a9fd4; --blue-bg: rgba(90,159,212,0.12);
+      --purple-bg: rgba(160,100,255,0.12); --purple-border: rgba(160,100,255,0.35);
+      --red-bg: rgba(220,80,80,0.12); --red-border: rgba(220,80,80,0.38);
+    }
+  }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg3); color: var(--text); font-size: 15px; line-height: 1.6; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--text2); margin-bottom: 2rem; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--border); padding-bottom: 0; }
+  .tab { font-size: 13px; padding: 6px 16px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; cursor: pointer; border: 0.5px solid transparent; color: var(--text2); background: none; }
+  .tab.active { background: var(--bg); border-color: var(--border); border-bottom-color: var(--bg); color: var(--text); font-weight: 500; }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+
+  /* controls */
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 16px; }
+  .controls label { font-size: 13px; color: var(--text2); }
+  .controls input { font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 4px 8px; background: var(--bg); color: var(--text); }
+  .controls button { font-size: 13px; padding: 5px 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg); color: var(--text); cursor: pointer; }
+  .controls button:hover { background: var(--bg2); }
+
+  /* legend */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text2); margin-bottom: 1rem; }
+  .leg { display: flex; align-items: center; gap: 5px; }
+  .leg-sq { width: 11px; height: 11px; border-radius: 3px; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* season bar */
+  .season-bar { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; margin-bottom: 1rem; height: 8px; }
+  .s-cell { border-radius: 2px; }
+
+  /* months grid */
+  .months-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .month-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; cursor: pointer; }
+  .month-card:hover { border-color: var(--border2); }
+  .month-card.active { border: 1.5px solid var(--blue); }
+  .mc-name { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .mc-temp { font-size: 11px; color: var(--text2); margin-bottom: 4px; }
+  .mc-bar-wrap { height: 4px; background: var(--bg3); border-radius: 2px; margin-bottom: 5px; }
+  .mc-bar { height: 4px; border-radius: 2px; background: #85B7EB; }
+  .mc-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .mc-tag { font-size: 10px; padding: 1px 7px; border-radius: 8px; }
+  .mc-rain { font-size: 10px; color: var(--text3); }
+
+  /* detail card */
+  .detail-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+  .detail-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }
+  .detail-name { font-size: 16px; font-weight: 500; }
+  .detail-season-tag { font-size: 12px; padding: 2px 10px; border-radius: 8px; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat-cell { background: var(--bg2); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .stat-label { font-size: 10px; color: var(--text2); margin-bottom: 2px; }
+  .stat-val { font-size: 18px; font-weight: 500; }
+  .event-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+  .event-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+  .event-tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; border: 0.5px solid var(--border2); color: var(--text2); background: var(--bg2); }
+
+  /* day grid */
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .dow-label { font-size: 10px; color: var(--text3); text-align: center; padding: 2px 0; }
+  .day-cell { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text2); border-radius: 3px; border: 0.5px solid transparent; cursor: default; }
+  .day-cell:hover .day-tt { display: block; }
+  .day-tt { display: none; position: absolute; background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 5px 9px; font-size: 11px; color: var(--text); z-index: 20; white-space: nowrap; bottom: 115%; left: 50%; transform: translateX(-50%); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .moon-marker { position: absolute; top: 1px; right: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--blue); opacity: 0.75; }
+  .veth-marker { position: absolute; top: 1px; left: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--text3); opacity: 0.45; }
+
+  .day-cell.full-moon   { background: var(--blue-bg); color: var(--text); font-weight: 500; border-color: rgba(42,109,181,0.2); }
+  .day-cell.new-moon    { background: rgba(0,0,0,0.05); color: var(--text); }
+  .day-cell.quarter     { background: rgba(42,109,181,0.04); color: var(--text); }
+  .day-cell.has-veth    { outline: 1.5px solid rgba(80,80,80,0.4); outline-offset: -1px; }
+  .day-cell.conjunction { background: var(--purple-bg); color: var(--text); font-weight: 500; outline: 1.5px solid var(--purple-border); outline-offset: -1px; }
+  .day-cell.disaster    { background: var(--red-bg) !important; color: var(--text) !important; font-weight: 500 !important; outline: 2px solid var(--red-border) !important; outline-offset: -1px !important; }
+
+  .day-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--text2); margin-top: 8px; }
+
+  /* info panel */
+  .info-panel { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+  .info-title { font-size: 13px; font-weight: 500; margin-bottom: 10px; }
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
+  .info-card { background: var(--bg2); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .info-label { font-size: 11px; color: var(--text2); margin-bottom: 2px; }
+  .info-val { font-size: 20px; font-weight: 500; }
+  .years-since { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
+  .chaos-note { font-size: 12px; color: var(--text2); font-style: italic; line-height: 1.6; border-left: 2px solid var(--border2); padding-left: 10px; margin-bottom: 8px; }
+  .chaos-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chaos-tag { font-size: 11px; padding: 2px 8px; border-radius: 8px; border: 0.5px solid var(--border2); color: var(--text2); background: var(--bg2); }
+  .disaster-banner { background: var(--red-bg); border: 0.5px solid var(--red-border); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; line-height: 1.7; margin-top: 12px; }
+  .disaster-banner strong { font-weight: 500; }
+
+  .phase-guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; border-top: 0.5px solid var(--border); padding-top: 12px; margin-top: 12px; }
+  .phase-item { font-size: 11px; color: var(--text2); text-align: center; }
+  .phase-day { font-size: 18px; font-weight: 500; color: var(--text); display: block; }
+
+  /* weather tab */
+  .wseason-bar { display: grid; grid-template-columns: repeat(13,1fr); gap: 3px; height: 8px; margin-bottom: 1rem; }
+  .wmonth-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px,1fr)); gap: 8px; margin-bottom: 1.5rem; }
+  .wmonth-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; }
+  .wmonth-card:hover { border-color: var(--border2); }
+  .wmonth-card.active { border: 1.5px solid var(--blue); }
+
+  /* lore tab */
+  .lore-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .lore-grid { grid-template-columns: 1fr; } .stat-row { grid-template-columns: repeat(2,1fr); } }
+  .lore-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+  .lore-card h3 { font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+  .lore-card p { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 6px; }
+  .lore-card ul { font-size: 13px; color: var(--text2); line-height: 1.8; padding-left: 1.2rem; }
+  .lore-full { grid-column: 1 / -1; }
+
+  /* day calculator */
+  .calc-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .calc-result { font-size: 18px; font-weight: 500; margin-top: 10px; color: var(--text); }
+  .calc-detail { font-size: 13px; color: var(--text2); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Calendario de Eranthys</h1>
+  <p class="subtitle">13 meses de 28 días · Luna del Orden · Veth, la luna negra · Costa de los Naufragios</p>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('cal')">Calendario lunar</button>
+    <button class="tab" onclick="showTab('weather')">Clima · Costa de los Naufragios</button>
+    <button class="tab" onclick="showTab('calc')">Calculadora de días</button>
+    <button class="tab" onclick="showTab('lore')">Lore</button>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div class="tab-panel active" id="tab-cal">
+    <div class="controls">
+      <label>Año CL:</label>
+      <input type="number" id="cal-year" value="21" min="1" style="width:65px;" />
+      <label style="margin-left:8px;">Semilla de Veth:</label>
+      <input type="number" id="cal-seed" value="42" min="1" max="999" style="width:60px;" />
+      <button onclick="renderCal()">Actualizar</button>
+    </div>
+    <div class="legend">
+      <span class="leg"><span class="leg-sq" style="background:var(--blue-bg);border:0.5px solid rgba(42,109,181,0.3);"></span>Luna llena (día 28)</span>
+      <span class="leg"><span class="leg-sq" style="background:rgba(0,0,0,0.05);border:0.5px solid #888;"></span>Luna nueva (día 14)</span>
+      <span class="leg"><span class="leg-sq" style="background:rgba(42,109,181,0.04);border:0.5px solid #aaa;"></span>Cuartos (7 y 21)</span>
+      <span class="leg"><span class="leg-sq" style="outline:1.5px solid rgba(80,80,80,0.4);outline-offset:-1px;"></span>Veth</span>
+      <span class="leg"><span class="leg-sq" style="background:var(--purple-bg);outline:1.5px solid var(--purple-border);outline-offset:-1px;"></span>Conjunción</span>
+      <span class="leg"><span class="leg-sq" style="background:var(--red-bg);outline:2px solid var(--red-border);outline-offset:-1px;"></span>El Último Día</span>
+    </div>
+    <div class="season-bar" id="cal-season-bar"></div>
+    <div class="months-grid" id="cal-months"></div>
+    <div class="info-panel" id="cal-info"></div>
+  </div>
+
+  <!-- WEATHER TAB -->
+  <div class="tab-panel" id="tab-weather">
+    <div class="controls">
+      <label>Año CL:</label>
+      <input type="number" id="w-year" value="21" min="1" style="width:65px;" />
+      <label style="margin-left:8px;">Semilla:</label>
+      <input type="number" id="w-seed" value="17" min="1" max="999" style="width:60px;" />
+      <button onclick="renderWeather()">Actualizar</button>
+    </div>
+    <div class="wseason-bar" id="w-season-bar"></div>
+    <div class="wmonth-grid" id="w-month-grid"></div>
+    <div class="detail-card" id="w-detail"></div>
+  </div>
+
+  <!-- CALCULATOR TAB -->
+  <div class="tab-panel" id="tab-calc">
+    <div class="calc-card">
+      <div class="info-title">Calcular fecha a partir de un punto de partida</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Mes inicio</label>
+          <select id="calc-month" style="font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);"></select>
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Día inicio</label>
+          <input type="number" id="calc-day" value="1" min="1" max="28" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Año inicio</label>
+          <input type="number" id="calc-year" value="21" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Días a sumar</label>
+          <input type="number" id="calc-add" value="63" min="0" style="width:80px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+        </div>
+        <div style="align-self:flex-end;">
+          <button onclick="calcDate()" style="font-size:13px;padding:5px 14px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);cursor:pointer;">Calcular</button>
+        </div>
+      </div>
+      <div class="calc-result" id="calc-result">—</div>
+      <div class="calc-detail" id="calc-detail"></div>
+    </div>
+    <div class="calc-card">
+      <div class="info-title">Días entre dos fechas</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Fecha A</label>
+          <div style="display:flex;gap:6px;">
+            <select id="diff-m1" style="font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);"></select>
+            <input type="number" id="diff-d1" value="1" min="1" max="28" style="width:55px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+            <input type="number" id="diff-y1" value="21" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+          </div>
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Fecha B</label>
+          <div style="display:flex;gap:6px;">
+            <select id="diff-m2" style="font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);"></select>
+            <input type="number" id="diff-d2" value="8" min="1" max="28" style="width:55px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+            <input type="number" id="diff-y2" value="21" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+          </div>
+        </div>
+        <div style="align-self:flex-end;">
+          <button onclick="calcDiff()" style="font-size:13px;padding:5px 14px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);cursor:pointer;">Calcular</button>
+        </div>
+      </div>
+      <div class="calc-result" id="diff-result">—</div>
+      <div class="calc-detail" id="diff-detail"></div>
+    </div>
+  </div>
+
+  <!-- LORE TAB -->
+  <div class="tab-panel" id="tab-lore">
+    <div class="lore-grid">
+      <div class="lore-card">
+        <h3>El calendario</h3>
+        <p>13 meses de 28 días exactos, para un total de 364 días al año. Cada mes comienza con la luna en fase menguante y termina con luna llena el día 28.</p>
+        <ul>
+          <li>Día 7 — cuarto menguante</li>
+          <li>Día 14 — luna nueva (oscuridad total)</li>
+          <li>Día 21 — cuarto creciente</li>
+          <li>Día 28 — luna llena (fin de mes)</li>
+        </ul>
+      </div>
+      <div class="lore-card">
+        <h3>Los trece meses</h3>
+        <ul>
+          <li>1. Arveth &nbsp; 2. Sulmar &nbsp; 3. Iryn</li>
+          <li>4. Thalek &nbsp; 5. Orum &nbsp; 6. Veshan</li>
+          <li>7. Keld &nbsp; 8. Navar &nbsp; 9. Elun</li>
+          <li>10. Drath &nbsp; 11. Sorvik &nbsp; 12. Umrel</li>
+          <li>13. Cashan</li>
+        </ul>
+      </div>
+      <div class="lore-card">
+        <h3>Veth, la luna negra</h3>
+        <p>Pequeña, oscura, casi invisible a simple vista. La mayoría de la gente desconoce su existencia. Solo algunos astrónomos y sabios la conocen y rastrean.</p>
+        <p>Su ciclo es errático: puede pasar entre 180 y 680 días entre apariciones. Hay años en que no se muestra en absoluto.</p>
+        <p>Cuando Veth coincide con la luna llena se produce una <strong>conjunción</strong>, considerada de mal augurio por quienes conocen su existencia.</p>
+      </div>
+      <div class="lore-card">
+        <h3>El Último Día</h3>
+        <p><strong>Cashan 28, año 18 CL.</strong> Luna llena. Paso de Veth. Conjunción.</p>
+        <p>La Hermandad Carmesí completó su ritual usando el poder absorbido de la estatua de Kiaransalee, amplificado por la conjunción. Las fuerzas del Plano Negativo, descontroladas por la influencia de Veth, convirtieron la destrucción en algo irreversible.</p>
+        <p>Todos los habitantes de Amatsukuni murieron y se levantaron como muertos vivientes. Los refugiados que sobrevivieron estaban fuera del archipiélago en ese momento.</p>
+      </div>
+      <div class="lore-card lore-full">
+        <h3>Clima en la Costa de los Naufragios</h3>
+        <p>Clima mediterráneo cálido, moderado por el mar. Cuatro estaciones atemperadas sin extremos de frío ni calor.</p>
+        <ul>
+          <li><strong>Invierno suave</strong> (Arveth–Sulmar, Sorvik–Cashan) — lluvias frecuentes, niebla matinal, viento del norte, marejadas.</li>
+          <li><strong>Primavera</strong> (Iryn–Thalek) — brisas marinas, lloviznas pasajeras, temperaturas agradables.</li>
+          <li><strong>Verano seco</strong> (Orum–Navar) — calor moderado por el mar, sin lluvias, viento del sur.</li>
+          <li><strong>Otoño</strong> (Elun–Drath) — regreso de las tormentas costeras, mar agitado, lluvias repentinas.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS = ['Arveth','Sulmar','Iryn','Thalek','Orum','Veshan','Keld','Navar','Elun','Drath','Sorvik','Umrel','Cashan'];
+const DOW = ['L','M','X','J','V','S','D'];
+const DISASTER_ABS = 17 * 364 + 364;
+const PHASE = { 7:'cuarto menguante', 14:'luna nueva', 21:'cuarto creciente', 28:'luna llena' };
+
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function getVethDays(seed) {
+  const all = new Set();
+  all.add(DISASTER_ABS);
+  const rngF = mulberry32(seed * 1777 + 919);
+  let fwd = DISASTER_ABS;
+  for (let i = 0; i < 40; i++) { fwd += Math.floor(rngF() * 500) + 180; all.add(fwd); }
+  const rngB = mulberry32(seed * 2333 + 457);
+  let bwd = DISASTER_ABS;
+  for (let i = 0; i < 40; i++) { bwd -= Math.floor(rngB() * 500) + 180; if (bwd > 0) all.add(bwd); }
+  return all;
+}
+
+function absDayToYearDay(abs) {
+  const year = Math.ceil(abs / 364);
+  return { year, day: abs - (year - 1) * 364 };
+}
+
+function dayLabel(d) {
+  const m = Math.floor((d-1)/28);
+  return MONTHS[m] + ' ' + (((d-1)%28)+1);
+}
+
+function renderCal() {
+  const year = parseInt(document.getElementById('cal-year').value) || 21;
+  const seed = parseInt(document.getElementById('cal-seed').value) || 42;
+  const allVeth = getVethDays(seed);
+  const vethThisYear = new Set();
+  allVeth.forEach(abs => { const {year:y,day:d} = absDayToYearDay(abs); if(y===year) vethThisYear.add(d); });
+  const isDisY = year === 18;
+
+  const bar = document.getElementById('cal-season-bar');
+  bar.innerHTML = '';
+  const SEASON_COLORS = ['#B5D4F4','#B5D4F4','#C0DD97','#C0DD97','#FAC775','#FAC775','#EF9F27','#EF9F27','#F5C4B3','#F5C4B3','#B5D4F4','#B5D4F4','#B5D4F4'];
+  SEASON_COLORS.forEach(c => { const el = document.createElement('div'); el.className='s-cell'; el.style.background=c; bar.appendChild(el); });
+
+  const grid = document.getElementById('cal-months');
+  grid.innerHTML = '';
+  let vethCount=0, conjCount=0;
+  const vethList=[];
+
+  for (let m=0; m<13; m++) {
+    const card = document.createElement('div');
+    card.className = 'month-card';
+    card.onclick = () => { document.querySelectorAll('.month-card').forEach(c=>c.classList.remove('active')); card.classList.add('active'); renderCalDetail(m,year,vethThisYear,isDisY); };
+    const days = [];
+    for (let d=1;d<=28;d++) {
+      const doy=m*28+d;
+      const phase=PHASE[d]||null;
+      const hasV=vethThisYear.has(doy);
+      const isDis=isDisY&&doy===364;
+      const isConj=d===28&&hasV&&!isDis;
+      if(hasV){vethCount++;vethList.push({day:doy,label:dayLabel(doy)});}
+      if(isConj) conjCount++;
+    }
+    const rainPct = [65,55,40,28,18,8,5,6,22,42,58,62,68][m];
+    const seasons = ['invierno suave','invierno suave','primavera','primavera','verano seco','verano seco','verano seco','verano seco','otoño','otoño','invierno suave','invierno suave','invierno suave'];
+    const sColors = [{bg:'#deeaf8',tc:'#0C447C'},{bg:'#deeaf8',tc:'#0C447C'},{bg:'#dff2d0',tc:'#27500A'},{bg:'#dff2d0',tc:'#27500A'},{bg:'#fde8b8',tc:'#633806'},{bg:'#fde8b8',tc:'#633806'},{bg:'#fcd5a0',tc:'#412402'},{bg:'#fcd5a0',tc:'#412402'},{bg:'#fad5c8',tc:'#712B13'},{bg:'#fad5c8',tc:'#712B13'},{bg:'#deeaf8',tc:'#0C447C'},{bg:'#deeaf8',tc:'#0C447C'},{bg:'#deeaf8',tc:'#0C447C'}];
+    const sc=sColors[m];
+    card.innerHTML=`<div class="mc-name">${MONTHS[m]}</div>
+      <div class="mc-bar-wrap"><div class="mc-bar" style="width:${rainPct}%;"></div></div>
+      <div class="mc-bottom"><span class="mc-tag" style="background:${sc.bg};color:${sc.tc};">${seasons[m]}</span><span class="mc-rain">${rainPct}% lluvia</span></div>`;
+    grid.appendChild(card);
+  }
+
+  const diff = year - 18;
+  const sinceText = diff===0 ? 'Año del desastre de Amatsukuni.' : diff>0 ? `${diff} año${diff>1?'s':''} desde el desastre (año 18 CL).` : `Faltan ${-diff} año${-diff>1?'s':''} para el desastre.`;
+
+  let vethSec = '';
+  if (vethList.length===0) {
+    vethSec = `<p class="chaos-note">Veth no cruzó el cielo visible este año.</p>`;
+  } else {
+    const tags = [...new Set(vethList.map(e=>e.label))].map(l=>`<span class="chaos-tag">${l}</span>`).join('');
+    vethSec = `<div style="font-size:11px;color:var(--text2);margin-bottom:6px;">Pasos de Veth registrados:</div><div class="chaos-tags">${tags}</div>`;
+  }
+
+  const disBanner = isDisY ? `<div class="disaster-banner"><strong>Cashan 28, año 18 CL — El Último Día de Amatsukuni.</strong><br>Luna llena. Paso de Veth. Conjunción. El ritual de la Hermandad Carmesí, amplificado por el poder absorbido de la estatua de Kiaransalee y descontrolado por la influencia de Veth, mató a toda la población de Amatsukuni y la levantó como muertos vivientes.</div>` : '';
+
+  document.getElementById('cal-info').innerHTML = `
+    <div class="info-title">Año ${year} CL</div>
+    <div class="years-since">${sinceText}</div>
+    <div class="info-grid">
+      <div class="info-card"><div class="info-label">Días totales</div><div class="info-val">364</div></div>
+      <div class="info-card"><div class="info-label">Lunas llenas</div><div class="info-val">13</div></div>
+      <div class="info-card"><div class="info-label">Pasos de Veth</div><div class="info-val">${vethCount}</div></div>
+      <div class="info-card"><div class="info-label">Conjunciones</div><div class="info-val">${conjCount}</div></div>
+    </div>
+    ${vethSec}
+    ${disBanner}
+    <div class="phase-guide">
+      <div class="phase-item"><span class="phase-day">7</span>Cuarto menguante</div>
+      <div class="phase-item"><span class="phase-day">14</span>Luna nueva</div>
+      <div class="phase-item"><span class="phase-day">21</span>Cuarto creciente</div>
+      <div class="phase-item"><span class="phase-day">28</span>Luna llena</div>
+    </div>`;
+
+  renderCalDetail(0, year, vethThisYear, isDisY);
+  document.querySelectorAll('.month-card')[0].classList.add('active');
+}
+
+function renderCalDetail(mi, year, vethThisYear, isDisY) {
+  const dayRows = [];
+  DOW.forEach(d => dayRows.push(`<div class="dow-label">${d}</div>`));
+  for (let d=1;d<=28;d++) {
+    const doy=mi*28+d;
+    const phase=PHASE[d]||null;
+    const hasV=vethThisYear.has(doy);
+    const isDis=isDisY&&doy===364;
+    const isConj=d===28&&hasV&&!isDis;
+    let cls='day-cell';
+    if(isDis) cls+=' disaster';
+    else if(isConj) cls+=' conjunction';
+    else if(hasV) cls+=' has-veth';
+    else if(d===28) cls+=' full-moon';
+    else if(d===14) cls+=' new-moon';
+    else if(d===7||d===21) cls+=' quarter';
+    const parts=[];
+    if(phase) parts.push(phase);
+    if(hasV) parts.push('paso de Veth');
+    if(isDis) parts.push('El Último Día');
+    const tt=parts.length?`<div class="day-tt">${d} ${MONTHS[mi]}: ${parts.join(' · ')}</div>`:'';
+    const moonM=phase?`<div class="moon-marker"></div>`:'';
+    const vethM=hasV&&!isDis?`<div class="veth-marker"></div>`:'';
+    dayRows.push(`<div class="${cls}">${d}${moonM}${vethM}${tt}</div>`);
+  }
+  const existing = document.querySelector('#cal-months .month-detail-card');
+  if(existing) existing.remove();
+  const dc = document.createElement('div');
+  dc.className='detail-card month-detail-card';
+  dc.innerHTML=`<div class="detail-header"><span class="detail-name">${MONTHS[mi]} <span style="font-weight:400;font-size:13px;">· mes ${mi+1} · año ${year} CL</span></span></div>
+    <div class="day-grid">${dayRows.join('')}</div>
+    <div class="day-legend">
+      <span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase lunar significativa</span>
+      <span class="leg"><span class="leg-dot" style="background:var(--text3);opacity:0.45;"></span>paso de Veth</span>
+    </div>`;
+  document.getElementById('cal-months').after(dc);
+}
+
+const W_BASE = [
+  {tMin:12,tMax:19,rain:65,season:'invierno suave',sc:'#deeaf8',tc:'#0C447C'},
+  {tMin:13,tMax:20,rain:55,season:'invierno suave',sc:'#deeaf8',tc:'#0C447C'},
+  {tMin:14,tMax:22,rain:40,season:'primavera',sc:'#dff2d0',tc:'#27500A'},
+  {tMin:16,tMax:24,rain:28,season:'primavera',sc:'#dff2d0',tc:'#27500A'},
+  {tMin:18,tMax:27,rain:18,season:'verano seco',sc:'#fde8b8',tc:'#633806'},
+  {tMin:20,tMax:30,rain:8,season:'verano seco',sc:'#fde8b8',tc:'#633806'},
+  {tMin:22,tMax:32,rain:5,season:'verano seco',sc:'#fcd5a0',tc:'#412402'},
+  {tMin:21,tMax:31,rain:6,season:'verano seco',sc:'#fcd5a0',tc:'#412402'},
+  {tMin:19,tMax:28,rain:22,season:'otoño',sc:'#fad5c8',tc:'#712B13'},
+  {tMin:17,tMax:25,rain:42,season:'otoño',sc:'#fad5c8',tc:'#712B13'},
+  {tMin:15,tMax:22,rain:58,season:'invierno suave',sc:'#deeaf8',tc:'#0C447C'},
+  {tMin:13,tMax:20,rain:62,season:'invierno suave',sc:'#deeaf8',tc:'#0C447C'},
+  {tMin:12,tMax:18,rain:68,season:'invierno suave',sc:'#deeaf8',tc:'#0C447C'},
+];
+const W_EVENTS = {
+  'invierno suave':['viento del norte','lluvia persistente','niebla matinal','marejada','oleaje fuerte','tormenta costera','cielo encapotado'],
+  'primavera':['brisa marina','llovizna pasajera','cielo despejado','viento variable','noche fresca','arco iris al atardecer'],
+  'verano seco':['calor sofocante','viento del sur','sequía','tormenta seca','polvo en el aire','noches cálidas','bruma de calor'],
+  'otoño':['primera lluvia','viento racheado','tormenta repentina','niebla al amanecer','mar agitado','truenos lejanos'],
+};
+const W_COLORS = {soleado:'#EF9F27',nublado:'#B4B2A9',lluvia:'#85B7EB',tormenta:'#534AB7',niebla:'#D3D1C7'};
+
+let wMonthData=[], wCurrentMonth=0;
+
+function wType(rng,rain) {
+  const r=rng(),p=rain/100;
+  if(r<p*0.25) return 'tormenta';
+  if(r<p*0.7) return 'lluvia';
+  if(r<p*0.85) return 'niebla';
+  if(r<p*0.85+(1-p)*0.3) return 'nublado';
+  return 'soleado';
+}
+
+function renderWeather() {
+  const year=parseInt(document.getElementById('w-year').value)||21;
+  const seed=parseInt(document.getElementById('w-seed').value)||17;
+  const rng=mulberry32(year*997+seed*311+73);
+  wMonthData=W_BASE.map((b,mi)=>{
+    const v=(rng()-0.5)*4,rv=(rng()-0.5)*16;
+    const tMin=Math.round(b.tMin+v*0.6),tMax=Math.round(b.tMax+v),rain=Math.max(2,Math.round(b.rain+rv));
+    const mrng=mulberry32(year*137+mi*31+seed*7);
+    const days=[];
+    for(let d=1;d<=28;d++){
+      const wt=wType(mrng,rain),temp=Math.round(b.tMin+(b.tMax-b.tMin)*(0.3+mrng()*0.7));
+      const phase=PHASE[d]||null;
+      days.push({d,wt,temp,phase});
+    }
+    const evPool=W_EVENTS[b.season]||[];
+    const numEv=2+Math.floor(rng()*3),evs=[],used=new Set();
+    for(let i=0;i<numEv&&evs.length<evPool.length;i++){
+      const idx=Math.floor(rng()*evPool.length);
+      if(!used.has(idx)){used.add(idx);evs.push(evPool[idx]);}
+    }
+    return {...b,tMin,tMax,rain,days,events:evs};
+  });
+
+  const sbar=document.getElementById('w-season-bar');
+  sbar.innerHTML='';
+  wMonthData.forEach(m=>{const c=document.createElement('div');c.className='s-cell';c.style.background=m.sc;sbar.appendChild(c);});
+
+  const mgrid=document.getElementById('w-month-grid');
+  mgrid.innerHTML='';
+  wMonthData.forEach((m,i)=>{
+    const card=document.createElement('div');
+    card.className='wmonth-card'+(i===wCurrentMonth?' active':'');
+    card.onclick=()=>{wCurrentMonth=i;document.querySelectorAll('.wmonth-card').forEach(c=>c.classList.remove('active'));card.classList.add('active');renderWDetail(i);};
+    const dom=Object.entries(m.days.reduce((a,d)=>{a[d.wt]=(a[d.wt]||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1])[0][0];
+    card.innerHTML=`<div class="mc-name">${MONTHS[i]}</div>
+      <div class="mc-temp">${m.tMin}° – ${m.tMax}°C</div>
+      <div class="mc-bar-wrap"><div class="mc-bar" style="width:${m.rain}%;"></div></div>
+      <div class="mc-bottom"><span class="mc-tag" style="background:${m.sc};color:${m.tc};">${m.season}</span><span class="mc-rain">${m.rain}%</span></div>`;
+    mgrid.appendChild(card);
+  });
+  renderWDetail(wCurrentMonth);
+}
+
+function renderWDetail(mi) {
+  const m=wMonthData[mi];
+  const dayRows=[];
+  DOW.forEach(d=>dayRows.push(`<div class="dow-label">${d}</div>`));
+  m.days.forEach(d=>{
+    const col=W_COLORS[d.wt]||'#B4B2A9';
+    const pm=d.phase?`<div class="moon-marker"></div>`:'';
+    dayRows.push(`<div class="day-cell" style="background:${col}22;border-color:${col}66;">${d.d}${pm}<div class="day-tt">${d.d} ${MONTHS[mi]}: ${d.wt}, ${d.temp}°C${d.phase?' · '+d.phase:''}</div></div>`);
+  });
+  const evTags=m.events.map(e=>`<span class="event-tag">${e}</span>`).join('');
+  const legItems=Object.entries(W_COLORS).map(([k,v])=>`<span class="leg"><span class="leg-sq" style="background:${v}33;border:0.5px solid ${v}88;"></span>${k}</span>`).join('');
+  document.getElementById('w-detail').innerHTML=`
+    <div class="detail-header">
+      <span class="detail-name">${MONTHS[mi]} <span style="font-weight:400;font-size:13px;">· mes ${mi+1}</span></span>
+      <span class="detail-season-tag" style="background:${m.sc};color:${m.tc};">${m.season}</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat-cell"><div class="stat-label">Temp. mínima</div><div class="stat-val">${m.tMin}°C</div></div>
+      <div class="stat-cell"><div class="stat-label">Temp. máxima</div><div class="stat-val">${m.tMax}°C</div></div>
+      <div class="stat-cell"><div class="stat-label">Prob. lluvia</div><div class="stat-val">${m.rain}%</div></div>
+      <div class="stat-cell"><div class="stat-label">Tiempo típico</div><div class="stat-val" style="font-size:13px;">${m.days.reduce((a,d)=>{a[d.wt]=(a[d.wt]||0)+1;return a;},{}) && Object.entries(m.days.reduce((a,d)=>{a[d.wt]=(a[d.wt]||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1])[0][0]}</div></div>
+    </div>
+    <div class="event-label">Fenómenos posibles:</div>
+    <div class="event-list">${evTags}</div>
+    <div class="day-grid" style="margin-top:12px;">${dayRows.join('')}</div>
+    <div class="day-legend" style="margin-top:6px;">${legItems}<span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase lunar</span></div>`;
+}
+
+function populateMonthSelects() {
+  ['calc-month','diff-m1','diff-m2'].forEach(id=>{
+    const sel=document.getElementById(id);
+    MONTHS.forEach((m,i)=>{
+      const opt=document.createElement('option');
+      opt.value=i;opt.textContent=m;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function dateToAbs(year, monthIdx, day) { return (year-1)*364 + monthIdx*28 + day; }
+function absToDate(abs) {
+  const year=Math.ceil(abs/364);
+  const doy=abs-(year-1)*364;
+  const month=Math.floor((doy-1)/28);
+  const day=((doy-1)%28)+1;
+  return {year,month,day};
+}
+
+function calcDate() {
+  const mi=parseInt(document.getElementById('calc-month').value);
+  const d=Math.max(1,Math.min(28,parseInt(document.getElementById('calc-day').value)||1));
+  const y=parseInt(document.getElementById('calc-year').value)||21;
+  const add=parseInt(document.getElementById('calc-add').value)||0;
+  const abs=dateToAbs(y,mi,d)+add;
+  const res=absToDate(abs);
+  const phase=PHASE[res.day]||null;
+  document.getElementById('calc-result').textContent=`${MONTHS[res.month]} ${res.day}, año ${res.year} CL`;
+  document.getElementById('calc-detail').textContent=`Día ${(res.month)*28+res.day} del año ${res.year}${phase?' · '+phase:''}`;
+}
+
+function calcDiff() {
+  const m1=parseInt(document.getElementById('diff-m1').value);
+  const d1=Math.max(1,Math.min(28,parseInt(document.getElementById('diff-d1').value)||1));
+  const y1=parseInt(document.getElementById('diff-y1').value)||21;
+  const m2=parseInt(document.getElementById('diff-m2').value);
+  const d2=Math.max(1,Math.min(28,parseInt(document.getElementById('diff-d2').value)||1));
+  const y2=parseInt(document.getElementById('diff-y2').value)||21;
+  const diff=Math.abs(dateToAbs(y2,m2,d2)-dateToAbs(y1,m1,d1));
+  const years=Math.floor(diff/364),rem=diff%364,months=Math.floor(rem/28),days=rem%28;
+  document.getElementById('diff-result').textContent=`${diff} días`;
+  let detail='';
+  if(years>0) detail+=`${years} año${years>1?'s':''}, `;
+  if(months>0) detail+=`${months} mes${months>1?'es':''}, `;
+  detail+=`${days} día${days!==1?'s':''}`;
+  document.getElementById('diff-detail').textContent=detail;
+}
+
+populateMonthSelects();
+renderCal();
+renderWeather();
+calcDate();
+</script>
+</body>
+</html>
