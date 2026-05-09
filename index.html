@@ -90,7 +90,7 @@
 
   /* day grid */
   .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  .dow-label { font-size: 10px; color: var(--text3); text-align: center; padding: 2px 0; }
+  .dow-label { font-size: 9px; color: var(--text3); text-align: center; padding: 2px 0; }
   .day-cell { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--text2); border-radius: 3px; border: 0.5px solid transparent; cursor: default; }
   .day-cell:hover .day-tt { display: block; }
   .day-tt { display: none; position: absolute; background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); padding: 5px 9px; font-size: 11px; color: var(--text); z-index: 20; white-space: nowrap; bottom: 115%; left: 50%; transform: translateX(-50%); pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -274,6 +274,15 @@
         </ul>
       </div>
       <div class="lore-card">
+        <h3>Los siete días de la semana</h3>
+        <ul>
+          <li>1. Lun &nbsp; 2. Mor &nbsp; 3. Mael</li>
+          <li>4. Jal &nbsp; 5. Vel &nbsp; 6. Sar</li>
+          <li>7. Drun</li>
+        </ul>
+        <p style="margin-top:8px;">Cada mes tiene exactamente 4 semanas completas de 7 días.</p>
+      </div>
+      <div class="lore-card">
         <h3>Veth, la luna negra</h3>
         <p>Pequeña, oscura, casi invisible a simple vista. La mayoría de la gente desconoce su existencia. Solo algunos astrónomos y sabios la conocen y rastrean.</p>
         <p>Su ciclo es errático: puede pasar entre 180 y 680 días entre apariciones. Hay años en que no se muestra en absoluto.</p>
@@ -301,7 +310,7 @@
 
 <script>
 const MONTHS = ['Arveth','Sulmar','Iryn','Thalek','Orum','Veshan','Keld','Navar','Elun','Drath','Sorvik','Umrel','Cashan'];
-const DOW = ['L','M','X','J','V','S','D'];
+const DOW = ['Lun','Mor','Mael','Jal','Vel','Sar','Drun'];
 const DISASTER_ABS = 17 * 364 + 364;
 const PHASE = { 7:'cuarto menguante', 14:'luna nueva', 21:'cuarto creciente', 28:'luna llena' };
 
