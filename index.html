@@ -326,8 +326,18 @@ const DISASTER_ABS = 17 * 364 + 364;
 const PHASE = { 7:'cuarto menguante', 14:'luna nueva', 21:'cuarto creciente', 28:'luna llena' };
 
 // Estado: dia actual y dia seleccionado
-let todayAbs = dateToAbs(21, 2, 8); // Iryn 8, año 21 por defecto
 let selectedAbs = null;
+
+function loadToday() {
+  const saved = localStorage.getItem('eranthys-today');
+  if (saved) return parseInt(saved);
+  return dateToAbs(21, 2, 8); // Iryn 8, año 21 por defecto
+}
+let todayAbs = loadToday();
+
+function saveToday() {
+  localStorage.setItem('eranthys-today', todayAbs);
+}
 
 function dateToAbs(year, monthIdx, day) { return (year-1)*364 + monthIdx*28 + day; }
 function absToDate(abs) {
@@ -343,6 +353,7 @@ function setToday() {
   const d  = Math.max(1, Math.min(28, parseInt(document.getElementById('today-day').value)||1));
   const y  = parseInt(document.getElementById('today-year').value)||21;
   todayAbs = dateToAbs(y, mi, d);
+  saveToday();
   // Sincronizar año del clima con el año de hoy
   document.getElementById('w-year').value = y;
   renderCal();
@@ -696,8 +707,15 @@ function calcDiff() {
 }
 
 populateMonthSelects();
-// Fijar Iryn (mes 3, indice 2) como mes por defecto en el selector de hoy
-document.getElementById('today-month').value = 2;
+// Rellenar controles de hoy con el valor guardado o el por defecto
+(function() {
+  const td = absToDate(todayAbs);
+  document.getElementById('today-month').value = td.month;
+  document.getElementById('today-day').value   = td.day;
+  document.getElementById('today-year').value  = td.year;
+  document.getElementById('cal-year').value    = td.year;
+  document.getElementById('w-year').value      = td.year;
+})();
 renderCal();
 renderWeather();
 calcDate();
