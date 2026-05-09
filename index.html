@@ -103,6 +103,10 @@
   .day-cell.has-veth    { outline: 1.5px solid rgba(80,80,80,0.4); outline-offset: -1px; }
   .day-cell.conjunction { background: var(--purple-bg); color: var(--text); font-weight: 500; outline: 1.5px solid var(--purple-border); outline-offset: -1px; }
   .day-cell.disaster    { background: var(--red-bg) !important; color: var(--text) !important; font-weight: 500 !important; outline: 2px solid var(--red-border) !important; outline-offset: -1px !important; }
+  .day-cell.is-today    { box-shadow: 0 0 0 2px #e8a020 !important; color: var(--text) !important; font-weight: 700 !important; }
+  .day-cell.is-selected { box-shadow: 0 0 0 2px #27a06b !important; color: var(--text) !important; font-weight: 700 !important; }
+  .today-banner { background: rgba(232,160,32,0.10); border: 0.5px solid rgba(232,160,32,0.4); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 13px; margin-bottom: 12px; display:flex; align-items:center; gap: 10px; flex-wrap:wrap; }
+  .today-dot { width: 10px; height: 10px; border-radius: 50%; background: #e8a020; flex-shrink:0; }
 
   .day-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--text2); margin-top: 8px; }
 
@@ -166,6 +170,15 @@
       <label style="margin-left:8px;">Semilla de Veth:</label>
       <input type="number" id="cal-seed" value="42" min="1" max="999" style="width:60px;" />
       <button onclick="renderCal()">Actualizar</button>
+      <span style="margin-left:16px;border-left:0.5px solid var(--border);padding-left:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span class="today-dot"></span>
+        <label>Hoy:</label>
+        <select id="today-month" style="font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:3px 6px;background:var(--bg);color:var(--text);"></select>
+        <input type="number" id="today-day" value="8" min="1" max="28" style="width:50px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:3px 6px;background:var(--bg);color:var(--text);" />
+        <label>año</label>
+        <input type="number" id="today-year" value="21" min="1" style="width:60px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:3px 6px;background:var(--bg);color:var(--text);" />
+        <button onclick="setToday()">Fijar</button>
+      </span>
     </div>
     <div class="legend">
       <span class="leg"><span class="leg-sq" style="background:var(--blue-bg);border:0.5px solid rgba(42,109,181,0.3);"></span>Luna llena (día 28)</span>
@@ -312,6 +325,27 @@ const DOW = ['Lun','Mor','Mael','Jal','Vel','Sar','Drun'];
 const DISASTER_ABS = 17 * 364 + 364;
 const PHASE = { 7:'cuarto menguante', 14:'luna nueva', 21:'cuarto creciente', 28:'luna llena' };
 
+// Estado: dia actual y dia seleccionado
+let todayAbs = dateToAbs(21, 2, 8); // Iryn 8, año 21 por defecto
+let selectedAbs = null;
+
+function dateToAbs(year, monthIdx, day) { return (year-1)*364 + monthIdx*28 + day; }
+function absToDate(abs) {
+  const year=Math.ceil(abs/364);
+  const doy=abs-(year-1)*364;
+  const month=Math.floor((doy-1)/28);
+  const day=((doy-1)%28)+1;
+  return {year,month,day};
+}
+
+function setToday() {
+  const mi = parseInt(document.getElementById('today-month').value);
+  const d  = Math.max(1, Math.min(28, parseInt(document.getElementById('today-day').value)||1));
+  const y  = parseInt(document.getElementById('today-year').value)||21;
+  todayAbs = dateToAbs(y, mi, d);
+  renderCal();
+}
+
 function showTab(id) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -428,14 +462,18 @@ function renderCal() {
 }
 
 function renderCalDetail(mi, year, vethThisYear, isDisY) {
+  const calYear = parseInt(document.getElementById('cal-year').value)||19;
   const dayRows = [];
   DOW.forEach(d => dayRows.push(`<div class="dow-label">${d}</div>`));
   for (let d=1;d<=28;d++) {
     const doy=mi*28+d;
+    const absDay=dateToAbs(calYear,mi,d);
     const phase=PHASE[d]||null;
     const hasV=vethThisYear.has(doy);
     const isDis=isDisY&&doy===364;
     const isConj=d===28&&hasV&&!isDis;
+    const isToday=absDay===todayAbs;
+    const isSel=absDay===selectedAbs;
     let cls='day-cell';
     if(isDis) cls+=' disaster';
     else if(isConj) cls+=' conjunction';
@@ -443,15 +481,21 @@ function renderCalDetail(mi, year, vethThisYear, isDisY) {
     else if(d===28) cls+=' full-moon';
     else if(d===14) cls+=' new-moon';
     else if(d===7||d===21) cls+=' quarter';
+    if(isToday) cls+=' is-today';
+    if(isSel&&!isToday) cls+=' is-selected';
     const parts=[];
+    if(isToday) parts.push('HOY');
+    if(isSel&&!isToday) parts.push('seleccionado');
     if(phase) parts.push(phase);
     if(hasV) parts.push('paso de Veth');
     if(isDis) parts.push('El Último Día');
     const tt=parts.length?`<div class="day-tt">${d} ${MONTHS[mi]}: ${parts.join(' · ')}</div>`:'';
     const moonM=phase?`<div class="moon-marker"></div>`:'';
     const vethM=hasV&&!isDis?`<div class="veth-marker"></div>`:'';
-    dayRows.push(`<div class="${cls}">${d}${moonM}${vethM}${tt}</div>`);
+    dayRows.push(`<div class="${cls}" onclick="selectDay(${absDay})">${d}${moonM}${vethM}${tt}</div>`);
   }
+  const todayDate=absToDate(todayAbs);
+  const todayLabel=`${MONTHS[todayDate.month]} ${todayDate.day}, año ${todayDate.year} CL`;
   let dc = document.getElementById("cal-month-detail");
   if (!dc) {
     dc = document.createElement("div");
@@ -459,12 +503,35 @@ function renderCalDetail(mi, year, vethThisYear, isDisY) {
     dc.className = "detail-card";
     document.getElementById("cal-months").after(dc);
   }
-  dc.innerHTML=`<div class="detail-header"><span class="detail-name">${MONTHS[mi]} <span style="font-weight:400;font-size:13px;">· mes ${mi+1} · año ${year} CL</span></span></div>
+  let selInfo = '';
+  if(selectedAbs!==null && selectedAbs!==todayAbs) {
+    const sd=absToDate(selectedAbs);
+    const diff=Math.abs(selectedAbs-todayAbs);
+    selInfo=` <span style="margin-left:12px;padding-left:12px;border-left:0.5px solid rgba(232,160,32,0.4);"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27a06b;margin-right:4px;"></span>Seleccionado: ${MONTHS[sd.month]} ${sd.day}, año ${sd.year} CL · ${diff} día${diff!==1?'s':''} ${selectedAbs>todayAbs?'adelante':'atrás'}</span>`;
+  }
+  dc.innerHTML=`<div class="today-banner"><span class="today-dot"></span><strong>Hoy:</strong> ${todayLabel}${selInfo}</div>
+    <div class="detail-header"><span class="detail-name">${MONTHS[mi]} <span style="font-weight:400;font-size:13px;">· mes ${mi+1} · año ${year} CL</span></span></div>
     <div class="day-grid">${dayRows.join("")}</div>
     <div class="day-legend">
-      <span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase lunar significativa</span>
+      <span class="leg"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;box-shadow:0 0 0 2px #e8a020;"></span>hoy</span>
+      <span class="leg"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;box-shadow:0 0 0 2px #27a06b;"></span>seleccionado</span>
+      <span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase de Shal</span>
       <span class="leg"><span class="leg-dot" style="background:var(--text3);opacity:0.45;"></span>paso de Veth</span>
     </div>`;
+}
+
+function selectDay(abs) {
+  selectedAbs = (selectedAbs === abs) ? null : abs;
+  const calYear=parseInt(document.getElementById('cal-year').value)||19;
+  const seed=parseInt(document.getElementById('cal-seed').value)||42;
+  const allVeth=getVethDays(seed);
+  const vethThisYear=new Set();
+  allVeth.forEach(a=>{const {year:y,day:dd}=absDayToYearDay(a);if(y===calYear)vethThisYear.add(dd);});
+  const isDisY=calYear===18;
+  const cards=Array.from(document.querySelectorAll('.month-card'));
+  const active=document.querySelector('.month-card.active');
+  const mi=active?cards.indexOf(active):0;
+  renderCalDetail(mi,calYear,vethThisYear,isDisY);
 }
 
 const W_BASE = [
@@ -573,7 +640,7 @@ function renderWDetail(mi) {
 }
 
 function populateMonthSelects() {
-  ['calc-month','diff-m1','diff-m2'].forEach(id=>{
+  ['calc-month','diff-m1','diff-m2','today-month'].forEach(id=>{
     const sel=document.getElementById(id);
     MONTHS.forEach((m,i)=>{
       const opt=document.createElement('option');
@@ -581,15 +648,6 @@ function populateMonthSelects() {
       sel.appendChild(opt);
     });
   });
-}
-
-function dateToAbs(year, monthIdx, day) { return (year-1)*364 + monthIdx*28 + day; }
-function absToDate(abs) {
-  const year=Math.ceil(abs/364);
-  const doy=abs-(year-1)*364;
-  const month=Math.floor((doy-1)/28);
-  const day=((doy-1)%28)+1;
-  return {year,month,day};
 }
 
 function calcDate() {
@@ -622,6 +680,8 @@ function calcDiff() {
 }
 
 populateMonthSelects();
+// Fijar Iryn (mes 3, indice 2) como mes por defecto en el selector de hoy
+document.getElementById('today-month').value = 2;
 renderCal();
 renderWeather();
 calcDate();
