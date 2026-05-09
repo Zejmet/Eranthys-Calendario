@@ -162,7 +162,7 @@
   <div class="tab-panel active" id="tab-cal">
     <div class="controls">
       <label>Año CL:</label>
-      <input type="number" id="cal-year" value="21" min="1" style="width:65px;" />
+      <input type="number" id="cal-year" value="19" min="1" style="width:65px;" />
       <label style="margin-left:8px;">Semilla de Veth:</label>
       <input type="number" id="cal-seed" value="42" min="1" max="999" style="width:60px;" />
       <button onclick="renderCal()">Actualizar</button>
@@ -184,7 +184,7 @@
   <div class="tab-panel" id="tab-weather">
     <div class="controls">
       <label>Año CL:</label>
-      <input type="number" id="w-year" value="21" min="1" style="width:65px;" />
+      <input type="number" id="w-year" value="19" min="1" style="width:65px;" />
       <label style="margin-left:8px;">Semilla:</label>
       <input type="number" id="w-seed" value="17" min="1" max="999" style="width:60px;" />
       <button onclick="renderWeather()">Actualizar</button>
@@ -209,7 +209,7 @@
         </div>
         <div>
           <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Año inicio</label>
-          <input type="number" id="calc-year" value="21" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+          <input type="number" id="calc-year" value="19" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
         </div>
         <div>
           <label style="font-size:13px;color:var(--text2);display:block;margin-bottom:3px;">Días a sumar</label>
@@ -230,7 +230,7 @@
           <div style="display:flex;gap:6px;">
             <select id="diff-m1" style="font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);"></select>
             <input type="number" id="diff-d1" value="1" min="1" max="28" style="width:55px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
-            <input type="number" id="diff-y1" value="21" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+            <input type="number" id="diff-y1" value="19" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
           </div>
         </div>
         <div>
@@ -238,7 +238,7 @@
           <div style="display:flex;gap:6px;">
             <select id="diff-m2" style="font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);"></select>
             <input type="number" id="diff-d2" value="8" min="1" max="28" style="width:55px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
-            <input type="number" id="diff-y2" value="21" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
+            <input type="number" id="diff-y2" value="19" min="1" style="width:65px;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;background:var(--bg);color:var(--text);" />
           </div>
         </div>
         <div style="align-self:flex-end;">
@@ -454,17 +454,19 @@ function renderCalDetail(mi, year, vethThisYear, isDisY) {
     const vethM=hasV&&!isDis?`<div class="veth-marker"></div>`:'';
     dayRows.push(`<div class="${cls}">${d}${moonM}${vethM}${tt}</div>`);
   }
-  const existing = document.querySelector('#cal-months .month-detail-card');
-  if(existing) existing.remove();
-  const dc = document.createElement('div');
-  dc.className='detail-card month-detail-card';
+  let dc = document.getElementById("cal-month-detail");
+  if (!dc) {
+    dc = document.createElement("div");
+    dc.id = "cal-month-detail";
+    dc.className = "detail-card";
+    document.getElementById("cal-months").after(dc);
+  }
   dc.innerHTML=`<div class="detail-header"><span class="detail-name">${MONTHS[mi]} <span style="font-weight:400;font-size:13px;">· mes ${mi+1} · año ${year} CL</span></span></div>
-    <div class="day-grid">${dayRows.join('')}</div>
+    <div class="day-grid">${dayRows.join("")}</div>
     <div class="day-legend">
       <span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase lunar significativa</span>
       <span class="leg"><span class="leg-dot" style="background:var(--text3);opacity:0.45;"></span>paso de Veth</span>
     </div>`;
-  document.getElementById('cal-months').after(dc);
 }
 
 const W_BASE = [
