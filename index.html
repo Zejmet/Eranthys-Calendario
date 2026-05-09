@@ -343,7 +343,10 @@ function setToday() {
   const d  = Math.max(1, Math.min(28, parseInt(document.getElementById('today-day').value)||1));
   const y  = parseInt(document.getElementById('today-year').value)||21;
   todayAbs = dateToAbs(y, mi, d);
+  // Sincronizar año del clima con el año de hoy
+  document.getElementById('w-year').value = y;
   renderCal();
+  renderWeather();
 }
 
 function showTab(id) {
@@ -613,16 +616,29 @@ function renderWeather() {
 
 function renderWDetail(mi) {
   const m=wMonthData[mi];
+  const wYear=parseInt(document.getElementById('w-year').value)||19;
   const dayRows=[];
   DOW.forEach(d=>dayRows.push(`<div class="dow-label">${d}</div>`));
   m.days.forEach(d=>{
+    const absDay=dateToAbs(wYear,mi,d.d-1+1-1,d.d); // calc abs
+    const wAbsDay=(wYear-1)*364+mi*28+d.d;
+    const isToday=wAbsDay===todayAbs;
     const col=W_COLORS[d.wt]||'#B4B2A9';
     const pm=d.phase?`<div class="moon-marker"></div>`:'';
-    dayRows.push(`<div class="day-cell" style="background:${col}22;border-color:${col}66;">${d.d}${pm}<div class="day-tt">${d.d} ${MONTHS[mi]}: ${d.wt}, ${d.temp}°C${d.phase?' · '+d.phase:''}</div></div>`);
+    const todayCls=isToday?' is-today':'';
+    const todayTip=isToday?' · HOY':'';
+    dayRows.push(`<div class="day-cell${todayCls}" style="background:${col}22;border-color:${col}66;">${d.d}${pm}<div class="day-tt">${d.d} ${MONTHS[mi]}: ${d.wt}, ${d.temp}°C${d.phase?' · '+d.phase:''}${todayTip}</div></div>`);
   });
+  const todayDate=absToDate(todayAbs);
+  const todayLabel=`${MONTHS[todayDate.month]} ${todayDate.day}, año ${todayDate.year} CL`;
+  const domW=Object.entries(m.days.reduce((a,d)=>{a[d.wt]=(a[d.wt]||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1])[0][0];
+  const todayInMonth=todayDate.year===wYear&&todayDate.month===mi;
+  const todayWeather=todayInMonth?m.days[todayDate.day-1]:null;
   const evTags=m.events.map(e=>`<span class="event-tag">${e}</span>`).join('');
   const legItems=Object.entries(W_COLORS).map(([k,v])=>`<span class="leg"><span class="leg-sq" style="background:${v}33;border:0.5px solid ${v}88;"></span>${k}</span>`).join('');
+  const todayWeatherInfo=todayWeather?`<span style="margin-left:12px;padding-left:12px;border-left:0.5px solid rgba(232,160,32,0.4);">Hoy: ${todayWeather.wt}, ${todayWeather.temp}°C</span>`:'';
   document.getElementById('w-detail').innerHTML=`
+    <div class="today-banner"><span class="today-dot"></span><strong>Hoy:</strong> ${todayLabel}${todayWeatherInfo}</div>
     <div class="detail-header">
       <span class="detail-name">${MONTHS[mi]} <span style="font-weight:400;font-size:13px;">· mes ${mi+1}</span></span>
       <span class="detail-season-tag" style="background:${m.sc};color:${m.tc};">${m.season}</span>
@@ -631,12 +647,12 @@ function renderWDetail(mi) {
       <div class="stat-cell"><div class="stat-label">Temp. mínima</div><div class="stat-val">${m.tMin}°C</div></div>
       <div class="stat-cell"><div class="stat-label">Temp. máxima</div><div class="stat-val">${m.tMax}°C</div></div>
       <div class="stat-cell"><div class="stat-label">Prob. lluvia</div><div class="stat-val">${m.rain}%</div></div>
-      <div class="stat-cell"><div class="stat-label">Tiempo típico</div><div class="stat-val" style="font-size:13px;">${m.days.reduce((a,d)=>{a[d.wt]=(a[d.wt]||0)+1;return a;},{}) && Object.entries(m.days.reduce((a,d)=>{a[d.wt]=(a[d.wt]||0)+1;return a;},{})).sort((a,b)=>b[1]-a[1])[0][0]}</div></div>
+      <div class="stat-cell"><div class="stat-label">Tiempo típico</div><div class="stat-val" style="font-size:13px;">${domW}</div></div>
     </div>
     <div class="event-label">Fenómenos posibles:</div>
     <div class="event-list">${evTags}</div>
     <div class="day-grid" style="margin-top:12px;">${dayRows.join('')}</div>
-    <div class="day-legend" style="margin-top:6px;">${legItems}<span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase lunar</span></div>`;
+    <div class="day-legend" style="margin-top:6px;">${legItems}<span class="leg"><span class="leg-dot" style="background:var(--blue);opacity:0.75;"></span>fase de Shal</span><span class="leg"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;box-shadow:0 0 0 2px #e8a020;"></span>hoy</span></div>`;
 }
 
 function populateMonthSelects() {
